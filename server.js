@@ -17,10 +17,20 @@ app.get( '/test', (request, response) => {
 app.get('/location', handleLocation);
 
 function handleLocation( request, response ) {
-  let city = request.query.city;
-  let locationData = require('./data/geo.json');
-  let location = new Location(city, locationData[0]);
-  response.json(location);
+  // try {
+    let city = request.query.city;
+    let locationData = require('./data/geo.json');
+    let location = new Location(city, locationData[0]);
+    // throw 'Location does not exist';
+    response.json(location);
+  // }
+  // catch(error) {
+  //   let errorObject = {
+  //     status: 500,
+  //     responseText: error,
+  //   };
+  //   response.status(500).json(errorObject);
+  // }
 }
 
 function Location(city, data) {
