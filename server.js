@@ -30,4 +30,22 @@ function Location(city, data) {
   this.longitude = data.lon;
 }
 
-app.listen( PORT, () => console.log('Server is up on ', PORT));
+app.get('/weather', handleWeather);
+
+function handleWeather(request, response) {
+  let weatherData = require('./data/darksky.json');
+  let dailyWeather = [];
+  
+  weatherData.daily.data.forEach( day => {
+    let forecast = new DailyForecast(day);
+   dailyWeather.push(forecast);
+  });
+  response.json(dailyWeather);
+}
+
+function DailyForecast(day) {
+  this.forecast = day.summary;
+  this.time = day.time;
+}
+
+app.listen( PORT, () => console.log('Server is up on', PORT));
