@@ -6,23 +6,35 @@ const cors = require('cors');
 const express = require('express');
 const PORT = process.env.PORT;
 const app = express();
+const superagent = require('superagent');
 
 app.use(cors());
 
-app.get( '/test', (request, response) => {
-  const name = request.query.name;
-  response.send(`Hello ${name}`);
-});
-
 app.get('/location', handleLocation);
+app.get('/weather', handleWeather);
 
 function handleLocation( request, response ) {
   try {
     let city = request.query.city;
-    let locationData = require('./data/geo.json');
-    let location = new Location(city, locationData[0]);
+    
+    //https://us1.locationiq.com/v1/search.php?key=YOUR_PRIVATE_TOKEN&q=SEARCH_STRING&format=json
+    const url = 'https://us1.locationiq.com/v1/search.php';
+    const queryStringParams = {
+      key: process.env.LOCATIONIQ,
+      q: city,
+      format: 'json',
+      limit: 1,
+    }
+
+    superagent.get(url)
+    .query(queryStringParams)
+      .then(data => {
+        let locationData = data.body[0];
+        let location = new Location(city, locationData);
     // throw 'Location does not exist';
     response.json(location);
+      })
+    
   }
   catch(error) {
     let errorObject = {
@@ -40,13 +52,11 @@ function Location(city, data) {
   this.longitude = data.lon;
 }
 
-app.get('/weather', handleWeather);
-
 function handleWeather(request, response) {
   let weatherData = require('./data/darksky.json');
   let dailyWeather = [];
   
-  weatherData.daily.data.forEach( day => {
+  weatherData.daily.data.map( day => {
     let forecast = new DailyForecast(day);
    dailyWeather.push(forecast);
   });
