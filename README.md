@@ -50,3 +50,4 @@ For this lab assignment, you will convert a location entered by the user into a 
 ## Credits and Collaborations
 
 - Brendon Hampton
+- Natalie Sinner
