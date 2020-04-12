@@ -1,7 +1,7 @@
 # City Explorer API
 
 **Author**: Chuck Li Villalobos
-**Version**: 1.0.0 (increment the patch/fix version number if you make more commits past your first submission)
+**Version**: 2.0.1 
 
 ## Overview
 For this lab assignment, you will convert a location entered by the user into a latitude and longitude, then use those values to request weather information for that location. As your City Explorer back end progresses in labs 6 through 9, you will use the latitude and longitude to request information from other APIs from the same search query.
