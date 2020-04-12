@@ -11,11 +11,11 @@ const superagent = require('superagent');
 app.use(cors());
 app.get('/location', handleLocation);
 app.get('/weather', handleWeather);
+app.get('/trails', handleTrails);
 
 function handleLocation( request, response ) {
   try {
     let city = request.query.city;
-    //https://us1.locationiq.com/v1/search.php?key=YOUR_PRIVATE_TOKEN&q=SEARCH_STRING&format=json
     const url = 'https://us1.locationiq.com/v1/search.php';
     const queryStringParams = {
       key: process.env.LOCATIONIQ,
@@ -26,17 +26,16 @@ function handleLocation( request, response ) {
 
     superagent.get(url)
     .query(queryStringParams)
-      .then(data => {
-        let locationData = data.body[0];
-        let location = new Location(city, locationData);
-    // throw 'Location does not exist';
-    response.json(location);
-      })
+    .then(data => {
+      let locationData = data.body[0];
+      let location = new Location(city, locationData);
+      response.json(location);
+    })
   }
   catch(error) {
     let errorObject = {
       status: 500,
-      responseText: error,
+      responseText: 'Something went wrong',
     };
     response.status(500).json(errorObject);
   }
@@ -53,31 +52,53 @@ function handleWeather(request, response) {
   let key = process.env.DARK_SKY_KEY;
   let lat = request.query.latitude;
   let lon = request.query.longitude;
-  
   let url = `https://api.darksky.net/forecast/${key}/${lat},${lon}`;
   
   superagent.get(url)
   .then(data => {
     let weatherData = data.body.daily.data.map( day => {
       return new DailyForecast(day);
-      // dailyWeather.push(forecast);
     })
     response.json(weatherData);
   });
-
-  // let weatherData = require('./data/darksky.json');
-  // let dailyWeather = [];
-  
-  // weatherData.daily.data.map( day => {
-  //   let forecast = new DailyForecast(day);
-  //  dailyWeather.push(forecast);
-  // });
-  // response.json(dailyWeather);
 }
 
 function DailyForecast(day) {
   this.forecast = day.summary;
-  this.time = day.time;
+  this.time = new Date(day.time).toUTCString();
+}
+
+function handleTrails (request, response) {
+  
+  const url = 'https://www.hikingproject.com/data/get-trails';
+  const queryStringParams = {
+    key: process.env.HIKING_API,
+    lat: request.query.latitude,
+    lon: request.query.longitude,
+    maxResults: 10,
+  }
+
+  superagent.get(url)
+  .query(queryStringParams)
+  .then(data => {
+    let trailsData = data.body.trails.map( trail => {
+      return new Hike(trail);
+    })
+    response.json(trailsData);
+  })
+}
+
+function Hike(trail){
+  this.name = trail.name;
+  this.location = trail.location;
+  this.length = trail.length;
+  this.stars = trail.stars;
+  this.star_votes = trail.starVotes;
+  this.summary = trail.summary;
+  this.trail_url = trail.url;
+  this.conditions = trail.conditionDetails;
+  this.condition_date = trail.conditionDate.substring(0,10);
+  this.condition_time = trail.conditionDate.substring(11,20);
 }
 
 app.listen( PORT, () => console.log('Server is up on', PORT));
