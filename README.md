@@ -51,3 +51,8 @@ For this lab assignment, you will convert a location entered by the user into a 
 
 - Brendon Hampton
 - Natalie Sinner
+- Rich Whitehead
+- Adam Owada
+
+To convert epoch time to local date
+- https://stackoverflow.com/questions/4631928/convert-utc-epoch-to-local-date
