@@ -55,7 +55,6 @@ function handleLocation( request, response ) {
               console.log(VALUES);
               response.json(location);
             });
-     
           })
         }    
       })
