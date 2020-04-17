@@ -6,39 +6,67 @@ const cors = require('cors');
 const express = require('express');
 const PORT = process.env.PORT;
 const app = express();
+const pg = require('pg');
 const superagent = require('superagent');
+const client = new pg.Client(process.env.DATABASE_URL);
 
+client.connect();
 app.use(cors());
+
 app.get('/location', handleLocation);
 app.get('/weather', handleWeather);
 app.get('/trails', handleTrails);
 
 function handleLocation( request, response ) {
-  try {
-    let city = request.query.city;
-    const url = 'https://us1.locationiq.com/v1/search.php';
-    const queryStringParams = {
+  let city = request.query.city.toLowerCase(); 
+  const url = 'https://us1.locationiq.com/v1/search.php';
+  const queryStringParams = {
       key: process.env.LOCATIONIQ,
       q: city,
       format: 'json',
       limit: 1,
     }
+    
+    const searchSQL = `
+      SELECT * FROM locations 
+      WHERE search_query = '${city.toLowerCase()}'
+    `;
 
-    superagent.get(url)
-    .query(queryStringParams)
-    .then(data => {
-      let locationData = data.body[0];
-      let location = new Location(city, locationData);
-      response.json(location);
-    })
-  }
-  catch(error) {
+    client.query(searchSQL)
+      .then( results => {
+        if (results.rowCount >= 1 ) {
+          console.log('Response came from Database - Row count = ' + results.rowCount);
+          response.json(results.rows[0]);
+          
+        } else {
+          superagent.get(url)
+          .query(queryStringParams)
+          .then(data => {
+            let locationData = data.body[0];
+            let location = new Location(city, locationData);
+            console.log(city + ' came from API')
+            const addSQL = `
+            INSERT INTO locations (search_query, formatted_query, latitude, longitude)  
+            VALUES($1, $2, $3, $4)
+          `;
+            let VALUES = [location.search_query, location.formatted_query, location.latitude, location.longitude];
+            client.query(addSQL, VALUES)
+            .then( result => {
+              console.log(VALUES);
+              response.json(location);
+            });
+     
+          })
+        }    
+      })
+   .catch(error => {
     let errorObject = {
       status: 500,
       responseText: 'Something went wrong',
     };
     response.status(500).json(errorObject);
-  }
+  })
+  
 }
 
 function Location(city, data) {
