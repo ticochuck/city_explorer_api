@@ -16,6 +16,7 @@ app.use(cors());
 app.get('/location', handleLocation);
 app.get('/weather', handleWeather);
 app.get('/trails', handleTrails);
+app.get('/movies', handleMovies);
 
 function handleLocation( request, response ) {
   let city = request.query.city.toLowerCase(); 
@@ -29,10 +30,11 @@ function handleLocation( request, response ) {
     
     const searchSQL = `
       SELECT * FROM locations 
-      WHERE search_query = '${city.toLowerCase()}'
+      WHERE search_query = $1
     `;
+    const searchValues =[city]
 
-    client.query(searchSQL)
+    client.query(searchSQL, searchValues)
       .then( results => {
         if (results.rowCount >= 1 ) {
           console.log('Response came from Database - Row count = ' + results.rowCount);
@@ -92,11 +94,10 @@ function handleWeather(request, response) {
 
 function DailyForecast(day) {
   this.forecast = day.summary;
-  this.time = new Date(day.time).toUTCString();
+  this.time = new Date(day.time*1000).toUTCString();
 }
 
 function handleTrails (request, response) {
-  
   const url = 'https://www.hikingproject.com/data/get-trails';
   const queryStringParams = {
     key: process.env.HIKING_API,
@@ -104,7 +105,6 @@ function handleTrails (request, response) {
     lon: request.query.longitude,
     maxResults: 10,
   }
-
   superagent.get(url)
   .query(queryStringParams)
   .then(data => {
@@ -126,6 +126,30 @@ function Hike(trail){
   this.conditions = trail.conditionDetails;
   this.condition_date = trail.conditionDate.substring(0,10);
   this.condition_time = trail.conditionDate.substring(11,20);
+}
+
+function handleMovies(req, res) {
+  let key = process.env.MOVIE_API_KEY;
+  let region = req.query.search_query;
+  const url = `https://api.themoviedb.org/3/search/movie?api_key=${key}&query=${region}&$include_adult=false`
+  // const url = `https://api.themoviedb.org/3/search/movie?api_key=${key}&language=en-US&query=${region}&page=1&include_adult=false`
+  superagent.get(url) 
+  .then(data => {
+  let movieData = data.body.results.map( movie => {
+      return new Movie(movie);
+    })
+  res.json(movieData);
+}) 
+}
+
+function Movie (movie) {
+  this.title = movie.title;
+  this.overview = movie.overview;
+  this.average_votes = movie.vote_average;
+  this.total_votes= movie.vote_count;
+  this.image_url= `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+  this.popularity = movie.popularity;
+  this.released_on= movie.release_date;
 }
 
 app.listen( PORT, () => console.log('Server is up on', PORT));
