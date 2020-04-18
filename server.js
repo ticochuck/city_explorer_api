@@ -17,6 +17,7 @@ app.get('/location', handleLocation);
 app.get('/weather', handleWeather);
 app.get('/trails', handleTrails);
 app.get('/movies', handleMovies);
+app.get('/yelp', handleRestaurants);
 
 function handleLocation( request, response ) {
   let city = request.query.city.toLowerCase(); 
@@ -132,7 +133,7 @@ function handleMovies(req, res) {
   let key = process.env.MOVIE_API_KEY;
   let region = req.query.search_query;
   const url = `https://api.themoviedb.org/3/search/movie?api_key=${key}&query=${region}&$include_adult=false`
-  // const url = `https://api.themoviedb.org/3/search/movie?api_key=${key}&language=en-US&query=${region}&page=1&include_adult=false`
+
   superagent.get(url) 
   .then(data => {
   let movieData = data.body.results.map( movie => {
@@ -150,6 +151,31 @@ function Movie (movie) {
   this.image_url= `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
   this.popularity = movie.popularity;
   this.released_on= movie.release_date;
+}
+
+function handleRestaurants(req, res) {
+  // let url = `https://api.yelp.com/v3/categories/restaurants`
+  let key = process.env.YELP_API_KEY;
+  let city = req.query.search_query;
+  let url = `https://api.yelp.com/v3/businesses/search?location=${city}`;
+  
+  superagent.get (url)
+  .set ('Authorization', `Bearer ${key}`)
+  .then( data => {
+    console.log(data.body.businesses);
+    let restaurantsData = data.body.businesses.map( restaurant => {
+      return new Restaurant(restaurant);
+    })
+  res.json(restaurantsData);
+  })
+}
+
+function Restaurant (restaurant) {
+  this.name= restaurant.name;
+  this.image_url= restaurant.image_url;
+  this.price= restaurant.price;
+  this.rating= restaurant.rating;
+  this.url = restaurant.url;
 }
 
 app.listen( PORT, () => console.log('Server is up on', PORT));
